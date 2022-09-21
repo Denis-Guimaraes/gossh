@@ -45,12 +45,13 @@ func updateItem(i int, o fyne.CanvasObject) {
 func loginSsh(i int) {
 	item := MyList.Ssh[i]
 	command := fmt.Sprintf(
-		"sshpass -p %q ssh -o StrictHostKeyChecking=no %s@%s -p %d",
+		"sshpass -p '%s' ssh -o StrictHostKeyChecking=no %s@%s -p %d",
 		item.Password,
 		item.User,
 		item.Host,
 		item.Port,
 	)
+
 	cmd := exec.Command("gnome-terminal", "--", "bash", "-c", command)
 	cmd.Start()
 }

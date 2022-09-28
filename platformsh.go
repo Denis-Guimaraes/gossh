@@ -24,24 +24,26 @@ type Environment struct {
 }
 
 var Projects []Project
+var wListPlatform *widget.List
+var projectLoader *widget.ProgressBarInfinite
 
 func platform() *container.TabItem {
-	update()
-	content := create()
-	return container.NewTabItemWithIcon("Platform", theme.MenuIcon(), content)
+	return container.NewTabItemWithIcon("Platform", theme.MenuIcon(), create())
 }
 
 func create() *fyne.Container {
-	action := container.NewVBox(action())
-	list := widget.NewList(projectsLength, createProjectsItem, updateProjectsItem)
-	return container.NewVBox(action, container.NewMax(list))
+	go updateProjects()
+	projectLoader = widget.NewProgressBarInfinite()
+	action := action()
+	wListPlatform = widget.NewList(projectsLength, createProjectsItem, updateProjectsItem)
+	return container.NewBorder(action, nil, nil, nil, wListPlatform, projectLoader)
 }
 
 func action() *fyne.Container {
-	updateBtn := widget.NewButtonWithIcon("Mettre à jour", theme.ViewRefreshIcon(), update)
+	updateBtn := widget.NewButtonWithIcon("Mettre à jour", theme.ViewRefreshIcon(), updateProjects)
 	loginBtn := widget.NewButtonWithIcon("Connexion", theme.LoginIcon(), login)
 	row := container.NewGridWithRows(1, loginBtn, updateBtn)
-	return container.NewVBox(row)
+	return row
 }
 
 func projectsLength() int {
@@ -63,11 +65,13 @@ func updateProjectsItem(i int, o fyne.CanvasObject) {
 	o.(*fyne.Container).Add(title)
 }
 
-func update() {
+func updateProjects() {
+	projectLoader.Start()
 	if !isLogged() {
 		login()
 	}
 	setProjects()
+	projectLoader.Stop()
 }
 
 func login() {
@@ -89,10 +93,10 @@ func setProjects() {
 	scanner.Scan()
 	for scanner.Scan() {
 		s := strings.Split(scanner.Text(), ",")
-		e := getEnvironments(s[0])
-		p := Project{Name: s[1], Id: s[0], Environments: e}
+		p := Project{Name: s[1], Id: s[0], Environments: getEnvironments(s[0])}
 		Projects = append(Projects, p)
 	}
+	fmt.Println(Projects)
 }
 
 func getEnvironments(id string) []Environment {

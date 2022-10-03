@@ -35,8 +35,9 @@ func create() *fyne.Container {
 	go updateProjects()
 	projectLoader = widget.NewProgressBarInfinite()
 	action := action()
+	top := container.NewVBox(action, projectLoader)
 	wListPlatform = widget.NewList(projectsLength, createProjectsItem, updateProjectsItem)
-	return container.NewBorder(action, nil, nil, nil, wListPlatform, projectLoader)
+	return container.NewBorder(top, nil, nil, nil, wListPlatform)
 }
 
 func action() *fyne.Container {
@@ -66,12 +67,14 @@ func updateProjectsItem(i int, o fyne.CanvasObject) {
 }
 
 func updateProjects() {
+	projectLoader.Show()
 	projectLoader.Start()
 	if !isLogged() {
 		login()
 	}
 	setProjects()
 	projectLoader.Stop()
+	projectLoader.Hide()
 }
 
 func login() {
@@ -88,6 +91,7 @@ func isLogged() bool {
 }
 
 func setProjects() {
+	Projects = nil
 	out, _ := exec.Command("bash", "-c", "platform project:list --format csv").Output()
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	scanner.Scan()
@@ -95,6 +99,7 @@ func setProjects() {
 		s := strings.Split(scanner.Text(), ",")
 		p := Project{Name: s[1], Id: s[0], Environments: getEnvironments(s[0])}
 		Projects = append(Projects, p)
+		wListPlatform.Refresh()
 	}
 	fmt.Println(Projects)
 }

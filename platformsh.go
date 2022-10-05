@@ -54,7 +54,8 @@ func projectsLength() int {
 func createProjectsItem() fyne.CanvasObject {
 	style := fyne.TextStyle{Bold: true}
 	title := widget.NewLabelWithStyle("", fyne.TextAlignLeading, style)
-	return container.NewGridWithRows(1, title)
+	login := container.NewAdaptiveGrid(3)
+	return container.NewGridWithRows(2, title, login)
 }
 
 func updateProjectsItem(i int, o fyne.CanvasObject) {
@@ -63,7 +64,12 @@ func updateProjectsItem(i int, o fyne.CanvasObject) {
 
 	style := fyne.TextStyle{Bold: true}
 	title := widget.NewLabelWithStyle(item.Name, fyne.TextAlignLeading, style)
+	login := container.NewAdaptiveGrid(3)
+	for _, e := range item.Environments {
+		login.Add(widget.NewButtonWithIcon(e.Name, theme.LoginIcon(), func() { startPlatformSsh(item.Id, e.Id) }))
+	}
 	o.(*fyne.Container).Add(title)
+	o.(*fyne.Container).Add(login)
 }
 
 func updateProjects() {
@@ -101,7 +107,6 @@ func setProjects() {
 		Projects = append(Projects, p)
 		wListPlatform.Refresh()
 	}
-	fmt.Println(Projects)
 }
 
 func getEnvironments(id string) []Environment {
@@ -116,4 +121,10 @@ func getEnvironments(id string) []Environment {
 		environments = append(environments, e)
 	}
 	return environments
+}
+
+func startPlatformSsh(projectId string, environmentId string) {
+	command := fmt.Sprintf("platform ssh  -p %s -e %s", projectId, environmentId)
+	cmd := exec.Command("gnome-terminal", "--", "bash", "-c", command)
+	cmd.Start()
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"os"
 	"os/exec"
 	"strings"
 
@@ -66,7 +67,7 @@ func updateProjectsItem(i int, o fyne.CanvasObject) {
 	title := widget.NewLabelWithStyle(item.Name, fyne.TextAlignLeading, style)
 	login := container.NewAdaptiveGrid(3)
 	for _, e := range item.Environments {
-		login.Add(widget.NewButtonWithIcon(e.Name, theme.LoginIcon(), func() { startPlatformSsh(item.Id, e.Id) }))
+		login.Add(widget.NewButtonWithIcon(e.Name, theme.LoginIcon(), startPlatformSsh(item.Id, e.Id)))
 	}
 	o.(*fyne.Container).Add(title)
 	o.(*fyne.Container).Add(login)
@@ -83,13 +84,20 @@ func updateProjects() {
 	projectLoader.Hide()
 }
 
+func platformPath() string {
+	home, _ := os.UserHomeDir()
+	return fmt.Sprintf("%s/.platformsh/bin/platform", home)
+}
+
 func login() {
-	cmd := exec.Command("gnome-terminal", "--wait", "--", "bash", "-c", "platform auth:browser-login")
+	command := fmt.Sprintf("%s auth:browser-login", platformPath())
+	cmd := exec.Command("gnome-terminal", "--wait", "--", "bash", "-c", command)
 	cmd.Run()
 }
 
 func isLogged() bool {
-	out, err := exec.Command("bash", "-c", "platform auth:info --no-auto-login --format csv").Output()
+	command := fmt.Sprintf("%s auth:info --no-auto-login --format csv", platformPath())
+	out, err := exec.Command("bash", "-c", command).Output()
 	if err != nil || len(out) <= 0 {
 		return false
 	}
@@ -98,7 +106,8 @@ func isLogged() bool {
 
 func setProjects() {
 	Projects = nil
-	out, _ := exec.Command("bash", "-c", "platform project:list --format csv").Output()
+	command := fmt.Sprintf("%s project:list --format csv", platformPath())
+	out, _ := exec.Command("bash", "-c", command).Output()
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	scanner.Scan()
 	for scanner.Scan() {
@@ -111,7 +120,7 @@ func setProjects() {
 
 func getEnvironments(id string) []Environment {
 	var environments []Environment
-	c := fmt.Sprintf("platform environment:list -p %s -I --format csv", id)
+	c := fmt.Sprintf("%s environment:list -p %s -I --format csv", platformPath(), id)
 	out, _ := exec.Command("bash", "-c", c).Output()
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	scanner.Scan()
@@ -123,8 +132,10 @@ func getEnvironments(id string) []Environment {
 	return environments
 }
 
-func startPlatformSsh(projectId string, environmentId string) {
-	command := fmt.Sprintf("platform ssh  -p %s -e %s", projectId, environmentId)
-	cmd := exec.Command("gnome-terminal", "--", "bash", "-c", command)
-	cmd.Start()
+func startPlatformSsh(projectId string, environmentId string) func() {
+	return func() {
+		command := fmt.Sprintf("%s ssh  -p %s -e %s", platformPath(), projectId, environmentId)
+		cmd := exec.Command("gnome-terminal", "--", "bash", "-c", command)
+		cmd.Start()
+	}
 }

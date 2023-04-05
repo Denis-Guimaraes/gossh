@@ -86,13 +86,21 @@ func updateProjects() {
 
 func platformPath() string {
 	home, _ := os.UserHomeDir()
-	return fmt.Sprintf("%s/.platformsh/bin/platform", home)
+	platformPath := fmt.Sprintf("%s/.platformsh/bin/platform", home)
+	_, err := os.Stat(platformPath)
+
+	if err != nil {
+		platformPath = fmt.Sprintf("%s/.local/bin/platform", home)
+	}
+	return platformPath
 }
 
 func login() {
 	command := fmt.Sprintf("%s auth:browser-login", platformPath())
+	fmt.Println(command)
 	cmd := exec.Command("gnome-terminal", "--wait", "--", "bash", "-c", command)
-	cmd.Run()
+	e := cmd.Run()
+	fmt.Println(e)
 }
 
 func isLogged() bool {
@@ -106,7 +114,7 @@ func isLogged() bool {
 
 func setProjects() {
 	Projects = nil
-	command := fmt.Sprintf("%s project:list --format csv", platformPath())
+	command := fmt.Sprintf("%s project:list --format csv --count 0", platformPath())
 	out, _ := exec.Command("bash", "-c", command).Output()
 	scanner := bufio.NewScanner(strings.NewReader(string(out)))
 	scanner.Scan()

@@ -1,6 +1,6 @@
 module gossh
 
-go 1.18
+go 1.20
 
 require fyne.io/fyne/v2 v2.1.4
 

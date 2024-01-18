@@ -91,6 +91,11 @@ func platformPath() string {
 
 	if err != nil {
 		platformPath = fmt.Sprintf("%s/.local/bin/platform", home)
+		_, err = os.Stat(platformPath)
+	}
+
+	if err != nil {
+		platformPath = "/usr/bin/platform"
 	}
 	return platformPath
 }
